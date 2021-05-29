@@ -273,6 +273,19 @@ class ArrowWriter(object):
             col_try_type = try_schema.field(col).type if try_schema is not None and col in try_schema.names else None
             typed_sequence = TypedSequence(batch_examples[col], type=col_type, try_type=col_try_type)
             typed_sequence_examples[col] = typed_sequence
+
+        if typed_sequence_examples['idx'] is not None and typed_sequence_examples['premise'] is not None and len(typed_sequence_examples['idx'].data) != len(typed_sequence_examples['premise'].data):
+            next_idx = len(typed_sequence_examples['idx'].data) - 1
+            next_idx = typed_sequence_examples['idx'].data[next_idx] + 1
+            while len(typed_sequence_examples['idx'].data) < len(typed_sequence_examples['premise'].data):
+                typed_sequence_examples['idx'].data.append(next_idx)
+                next_idx = next_idx + 1
+
+        if typed_sequence_examples['label'] is not None and typed_sequence_examples['premise'] is not None and len(typed_sequence_examples['label'].data) != len(typed_sequence_examples['premise'].data):
+            last_idx = len(typed_sequence_examples['label'].data)
+            for next_idx in range(last_idx):
+                typed_sequence_examples['label'].data.append(typed_sequence_examples['label'].data[next_idx])
+
         pa_table = pa.Table.from_pydict(typed_sequence_examples)
         self.write_table(pa_table)
 
